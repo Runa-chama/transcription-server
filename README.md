@@ -10,7 +10,7 @@ and be published through SSH reverse tunnels and nginx.
 - Outputs SRT, VTT, TXT, and JSON.
 - One job at a time with a small queue, plus cancel and retry support.
 - Uploaded files and generated results are deleted after 12 hours.
-- SAP Fundamental Styles / SAP Horizon UI.
+- Responsive Japanese web interface for transcription uploads and results.
 
 ## Local setup
 

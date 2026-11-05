@@ -61,8 +61,15 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const NOTICE_KINDS = {
+  information: "info",
+  success: "success",
+  warning: "warning",
+  error: "error",
+};
+
 function setNotice(text, kind = "information") {
-  notice.className = `fd-message-strip fd-message-strip--${kind}`;
+  notice.className = `ts-notice ts-notice--${NOTICE_KINDS[kind] || "info"}`;
   noticeText.textContent = text;
 }
 
@@ -77,8 +84,8 @@ function setStatus(text, sub = "") {
 
 function setBar(bar, pct, labelEl, pctEl) {
   const clamped = Math.max(0, Math.min(100, pct || 0));
-  bar.style.width = `${clamped}%`;
-  const parent = bar.closest(".fd-progress-indicator");
+  bar.style.transform = `scaleX(${clamped / 100})`;
+  const parent = bar.closest("[role='progressbar']");
   if (parent) parent.setAttribute("aria-valuenow", String(Math.round(clamped)));
   if (labelEl) labelEl.textContent = `${clamped.toFixed(0)}%`;
   if (pctEl) pctEl.textContent = `${clamped.toFixed(0)}%`;
@@ -98,29 +105,18 @@ function fillSelect(select, items, selected) {
 function buildFormats(formats) {
   formatsBox.innerHTML = "";
   for (const fmt of formats) {
-    const container = document.createElement("div");
-    container.className = "ts-check";
+    const label = document.createElement("label");
+    label.className = "ts-check";
     const input = document.createElement("input");
-    input.className = "fd-checkbox";
     input.type = "checkbox";
     input.id = `fmt-${fmt}`;
     input.value = fmt;
     input.checked = fmt === "srt" || fmt === "txt";
-    const label = document.createElement("label");
-    label.className = "fd-checkbox__label";
-    label.htmlFor = input.id;
-    const checkmark = document.createElement("span");
-    checkmark.className = "fd-checkbox__checkmark";
-    checkmark.setAttribute("aria-hidden", "true");
-    const labelContainer = document.createElement("span");
-    labelContainer.className = "fd-checkbox__label-container";
     const text = document.createElement("span");
-    text.className = "fd-checkbox__text";
+    text.className = "ts-check__text";
     text.textContent = fmt.toUpperCase();
-    labelContainer.appendChild(text);
-    label.append(checkmark, labelContainer);
-    container.append(input, label);
-    formatsBox.appendChild(container);
+    label.append(input, text);
+    formatsBox.appendChild(label);
   }
 }
 
@@ -421,15 +417,14 @@ function renderSegments(segments) {
   for (let index = state.lastSegmentCount; index < segments.length; index += 1) {
     const segment = segments[index];
     const row = document.createElement("tr");
-    row.className = "fd-table__row";
     const startCell = document.createElement("td");
-    startCell.className = "fd-table__cell";
+    startCell.className = "ts-table__time";
     startCell.textContent = formatClock(segment.start);
     const endCell = document.createElement("td");
-    endCell.className = "fd-table__cell";
+    endCell.className = "ts-table__time";
     endCell.textContent = formatClock(segment.end);
     const textCell = document.createElement("td");
-    textCell.className = "fd-table__cell";
+    textCell.className = "ts-table__text";
     textCell.textContent = segment.text;
     row.append(startCell, endCell, textCell);
     segmentBody.appendChild(row);
@@ -467,7 +462,7 @@ function renderResult(job) {
   downloads.innerHTML = "";
   for (const fmt of job.outputs || []) {
     const link = document.createElement("a");
-    link.className = "fd-button fd-button--compact";
+    link.className = "ts-download";
     link.href = `/api/jobs/${job.id}/download/${fmt}`;
     link.textContent = fmt.toUpperCase();
     link.setAttribute("download", "");
