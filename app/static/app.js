@@ -122,7 +122,7 @@ function buildFormats(formats) {
     input.className = "fd-checkbox";
     input.id = `fmt-${fmt}`;
     input.value = fmt;
-    input.checked = fmt === "srt" || fmt === "txt";
+    input.checked = fmt === "txt";
     const label = document.createElement("label");
     label.className = "fd-checkbox__label";
     label.htmlFor = input.id;
@@ -320,6 +320,7 @@ async function start() {
   startBtn.disabled = true;
   cancelBtn.hidden = true;
   resetResult();
+  notice.hidden = false;
   uploadWrap.hidden = false;
   jobWrap.hidden = true;
   setBusy(true);
@@ -408,8 +409,9 @@ function renderJob(job) {
     setNotice("文字起こしを実行しています。完了までそのままお待ちください。", "information");
   } else if (job.status === "done") {
     jobLabel.textContent = "完了";
+    jobWrap.hidden = true;
     setStatus("完了", `${job.segment_count || 0} セグメント`);
-    setNotice("文字起こしが完了しました。結果をダウンロードできます。", "success");
+    setNotice("文字起こしが完了しました。", "success");
   } else if (job.status === "cancelled") {
     jobLabel.textContent = "キャンセル";
     setStatus("キャンセル", job.message || "");
@@ -483,14 +485,26 @@ function renderResult(job) {
   downloads.innerHTML = "";
   for (const fmt of job.outputs || []) {
     const link = document.createElement("a");
-    link.className = "ts-download";
+    link.className = "ts-download fd-button fd-button--emphasized";
     link.href = `/api/jobs/${job.id}/download/${fmt}`;
-    link.textContent = fmt.toUpperCase();
+    link.setAttribute("aria-label", `${fmt.toUpperCase()} をダウンロード`);
     link.setAttribute("download", "");
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.classList.add("ts-download__icon");
+    icon.setAttribute("viewBox", "0 0 16 16");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<path d="M8 1.5v8m0 0 3-3m-3 3-3-3M2.5 10v3.5h11V10" />';
+    const label = document.createElement("span");
+    label.textContent = `${fmt.toUpperCase()} をダウンロード`;
+    link.append(icon, label);
     downloads.appendChild(link);
   }
 
   fullText.value = (job.segments || []).map((segment) => segment.text).join("\n");
+
+  const autoDownload = [...downloads.querySelectorAll("a")].find((link) => link.href.endsWith("/txt"))
+    || downloads.querySelector("a");
+  if (autoDownload) requestAnimationFrame(() => autoDownload.click());
 }
 
 async function cancelJob() {
