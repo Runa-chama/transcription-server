@@ -99,7 +99,7 @@ function buildFormats(formats) {
   formatsBox.innerHTML = "";
   for (const fmt of formats) {
     const container = document.createElement("div");
-    container.className = "fd-checkbox__label-container";
+    container.className = "ts-check";
     const input = document.createElement("input");
     input.className = "fd-checkbox";
     input.type = "checkbox";
@@ -109,7 +109,16 @@ function buildFormats(formats) {
     const label = document.createElement("label");
     label.className = "fd-checkbox__label";
     label.htmlFor = input.id;
-    label.textContent = fmt.toUpperCase();
+    const checkmark = document.createElement("span");
+    checkmark.className = "fd-checkbox__checkmark";
+    checkmark.setAttribute("aria-hidden", "true");
+    const labelContainer = document.createElement("span");
+    labelContainer.className = "fd-checkbox__label-container";
+    const text = document.createElement("span");
+    text.className = "fd-checkbox__text";
+    text.textContent = fmt.toUpperCase();
+    labelContainer.appendChild(text);
+    label.append(checkmark, labelContainer);
     container.append(input, label);
     formatsBox.appendChild(container);
   }
