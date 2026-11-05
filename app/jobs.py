@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import queue
 import shutil
@@ -21,6 +22,9 @@ from .whisper_engine import (
     OutOfMemory,
     TranscribeOptions,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class QueueFull(RuntimeError):
@@ -51,8 +55,6 @@ class Job:
     language_probability: float = 0.0
     duration: float = 0.0
     elapsed: float = 0.0
-    device: str = ""
-    compute_type: str = ""
     outputs: list[str] = field(default_factory=list)
     cancel_event: threading.Event = field(default_factory=threading.Event)
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -83,8 +85,6 @@ class Job:
             "language_probability": self.language_probability,
             "duration": self.duration,
             "elapsed": self.elapsed,
-            "device": self.device,
-            "compute_type": self.compute_type,
             "outputs": self.outputs,
         }
 
@@ -188,6 +188,7 @@ class JobManager:
             try:
                 self._process(job)
             finally:
+                self.engine.allow_gpu()
                 self._queue.task_done()
 
     def _process(self, job: Job) -> None:
@@ -201,20 +202,21 @@ class JobManager:
                     job.message = "キャンセルしました"
                 self._persist(job)
                 return
-            except OutOfMemory as exc:
+            except OutOfMemory:
                 if job.retried_cpu:
-                    self._fail(job, f"GPU メモリ不足のため処理できませんでした: {exc}")
+                    self._fail(job, "メモリ不足のため処理できませんでした。より短いファイルでお試しください。")
                     return
                 job.retried_cpu = True
                 with job.lock:
                     job.segments.clear()
                     job.progress = 0.0
                     job.status = "loading"
-                    job.message = "GPU メモリ不足のため CPU で再試行します…"
+                    job.message = "処理を続行しています…"
                 self._persist(job)
                 self.engine.force_cpu()
-            except Exception as exc:  # noqa: BLE001
-                self._fail(job, f"{exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("transcription job %s failed", job.id)
+                self._fail(job, "処理中にエラーが発生しました。時間をおいて再度お試しください。")
                 return
 
     def _run(self, job: Job) -> None:
@@ -232,15 +234,13 @@ class JobManager:
         def on_segment(segment: Segment) -> None:
             with job.lock:
                 job.segments.append(segment)
+                job.status = "processing"
+                job.message = "文字起こし中…"
 
         def on_progress(value: float) -> None:
             with job.lock:
                 job.progress = max(job.progress, round(value * 100, 1))
                 job.status = "processing"
-
-        with job.lock:
-            job.status = "processing"
-            job.message = "文字起こし中…"
 
         result = self.engine.transcribe(
             self._source_path(job),
@@ -259,8 +259,6 @@ class JobManager:
             "duration_seconds": round(result.duration, 3),
             "elapsed_seconds": round(result.elapsed, 3),
             "model": result.model,
-            "device": result.device,
-            "compute_type": result.compute_type,
             "speed_factor": round(result.duration / result.elapsed, 2)
             if result.elapsed > 0
             else 0.0,
@@ -280,8 +278,6 @@ class JobManager:
             job.language_probability = result.language_probability
             job.duration = result.duration
             job.elapsed = result.elapsed
-            job.device = result.device
-            job.compute_type = result.compute_type
             job.outputs = outputs
             job.progress = 100.0
             job.status = "done"
@@ -342,8 +338,6 @@ class JobManager:
         job.language_probability = float(meta.get("language_probability", 0.0))
         job.duration = float(meta.get("duration", 0.0))
         job.elapsed = float(meta.get("elapsed", 0.0))
-        job.device = meta.get("device", "")
-        job.compute_type = meta.get("compute_type", "")
         job.outputs = list(meta.get("outputs", []))
         if job.status in ("queued", "loading", "processing"):
             job.status = "error"

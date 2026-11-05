@@ -40,7 +40,6 @@ const resultWrap = $("resultWrap");
 const segmentBody = $("segmentBody");
 const fullText = $("fullText");
 const downloads = $("downloads");
-const gpuChip = $("gpuChip");
 
 function formatBytes(value) {
   if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(2)} GB`;
@@ -127,22 +126,9 @@ async function loadSystem() {
       fillSelect(taskSelect, state.system.tasks, "transcribe");
       buildFormats(state.system.formats);
     }
-    updateGpuChip();
   } catch (error) {
-    gpuChip.querySelector(".fd-info-label__text").textContent = "GPU 情報を取得できません";
+    setNotice("設定を読み込めませんでした。ページを再読み込みしてください。", "error");
   }
-}
-
-function updateGpuChip() {
-  const gpus = state.system?.gpus || [];
-  const target = gpus.find((gpu) => /4060\s*Ti/i.test(gpu.name)) || gpus[0];
-  const textEl = gpuChip.querySelector(".fd-info-label__text");
-  if (!target) {
-    textEl.textContent = "GPU 情報なし";
-    return;
-  }
-  const free = Math.max(0, target.memory_total_mb - target.memory_used_mb);
-  textEl.textContent = `${target.name.replace("NVIDIA GeForce ", "")}: ${(free / 1024).toFixed(1)} GB 空き`;
 }
 
 function selectFile(file) {
@@ -247,7 +233,7 @@ async function uploadFile(file, init) {
     const done = loaded.reduce((sum, value) => sum + value, 0);
     const pct = file.size ? (done / file.size) * 100 : 0;
     setBar(uploadBar, pct, uploadPct, null);
-    uploadLabel.textContent = `アップロード中… ${formatBytes(done)} / ${formatBytes(file.size)}（${concurrency} 並列）`;
+    uploadLabel.textContent = `アップロード中… ${formatBytes(done)} / ${formatBytes(file.size)}`;
   };
   update();
 
@@ -312,7 +298,7 @@ async function start() {
   jobWrap.hidden = true;
   setBusy(true);
   setNotice("アップロードを開始しています…", "information");
-  setStatus("アップロード中", "分割アップロードを並列実行しています。");
+  setStatus("アップロード中", "");
 
   try {
     const init = await apiJson("/api/uploads/init", {
@@ -340,7 +326,7 @@ async function start() {
     uploadWrap.hidden = true;
     jobWrap.hidden = false;
     cancelBtn.hidden = false;
-    setStatus("処理待ち", "キューに追加されました。");
+    setStatus("処理待ち", "");
     pollJob();
   } catch (error) {
     uploadWrap.hidden = true;
@@ -388,8 +374,8 @@ function renderJob(job) {
   setBar(jobBar, pct, jobPct, null);
 
   if (job.status === "queued") {
-    jobLabel.textContent = "順番待ち…";
-    setStatus("順番待ち", job.message || "");
+    jobLabel.textContent = "処理待ち…";
+    setStatus("処理待ち", job.message || "");
   } else if (job.status === "loading" || job.status === "processing") {
     jobLabel.textContent = job.message || "処理中…";
     setStatus(job.message || "処理中", `${job.segment_count || 0} セグメント`);
@@ -449,17 +435,12 @@ function renderResult(job) {
 
   const languageLabel =
     state.system?.languages.find((item) => item.id === job.language)?.label || job.language || "-";
-  const deviceLabel =
-    job.device === "cuda" ? "RTX 4060 Ti (CUDA)" : job.device === "cpu" ? "CPU" : job.device || "-";
-  const speed = job.elapsed > 0 ? (job.duration / job.elapsed).toFixed(1) : "-";
 
   const entries = [
     ["言語", `${languageLabel}${job.language_probability ? ` (${Math.round(job.language_probability * 100)}%)` : ""}`],
     ["音声の長さ", formatClock(job.duration || 0)],
     ["処理時間", formatClock(job.elapsed || 0)],
-    ["速度", `${speed}x`],
     ["モデル", job.model],
-    ["実行環境", `${deviceLabel} / ${job.compute_type || "-"}`],
     ["セグメント数", String(job.segment_count || 0)],
   ];
   metaList.innerHTML = "";
@@ -520,4 +501,3 @@ cancelBtn.addEventListener("click", cancelJob);
 $("copyBtn").addEventListener("click", copyText);
 
 loadSystem();
-setInterval(loadSystem, 20000);

@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import subprocess
-import threading
-import time
+import logging
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
@@ -21,48 +18,11 @@ from .jobs import JobManager, QueueFull
 from .uploads import UploadError, UploadManager
 from .whisper_engine import Engine, TranscribeOptions
 
+logger = logging.getLogger(__name__)
+
 engine = Engine()
 uploads = UploadManager()
 jobs = JobManager(engine)
-
-_CREATE_NO_WINDOW = 0x08000000
-_gpu_cache: dict = {"at": 0.0, "data": []}
-_gpu_lock = threading.Lock()
-
-
-def _gpu_info() -> list[dict]:
-    now = time.time()
-    with _gpu_lock:
-        if now - _gpu_cache["at"] < 5:
-            return _gpu_cache["data"]
-        data: list[dict] = []
-        try:
-            completed = subprocess.run(
-                [
-                    "nvidia-smi",
-                    "--query-gpu=index,name,memory.total,memory.used,utilization.gpu",
-                    "--format=csv,noheader,nounits",
-                ],
-                capture_output=True,
-                timeout=6,
-                creationflags=_CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else _CREATE_NO_WINDOW,
-            )
-            for line in completed.stdout.decode("utf-8", "replace").splitlines():
-                parts = [part.strip() for part in line.split(",")]
-                if len(parts) >= 5 and parts[0].isdigit():
-                    data.append(
-                        {
-                            "index": int(parts[0]),
-                            "name": parts[1],
-                            "memory_total_mb": int(float(parts[2])),
-                            "memory_used_mb": int(float(parts[3])),
-                            "utilization": int(float(parts[4])),
-                        }
-                    )
-        except (OSError, subprocess.SubprocessError, ValueError):
-            data = []
-        _gpu_cache.update({"at": now, "data": data})
-        return data
 
 
 async def _cleanup_loop() -> None:
@@ -139,14 +99,7 @@ async def healthz() -> dict:
 @app.get("/api/system")
 async def system() -> dict:
     return {
-        "engine": engine.describe(),
-        "gpus": await asyncio.to_thread(_gpu_info),
-        "queue_size": jobs.queue_size(),
-        "ttl_hours": config.TTL_HOURS,
         "max_upload_bytes": config.MAX_UPLOAD_BYTES,
-        "chunk_size": config.CHUNK_SIZE,
-        "chunk_concurrency": config.UPLOAD_CONCURRENCY,
-        "max_queue": config.MAX_QUEUE,
         "default_model": config.DEFAULT_MODEL,
         "models": [{"id": model, "label": label} for model, label in config.MODEL_CHOICES],
         "languages": [{"id": code, "label": label} for code, label in config.LANGUAGE_CHOICES],
@@ -214,9 +167,13 @@ async def complete_upload(upload_id: str, payload: CompleteUpload) -> dict:
         )
     except QueueFull as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
+        logger.exception("failed to create job for upload %s", upload_id)
         uploads.discard(upload_id)
-        raise HTTPException(status_code=500, detail=f"ジョブを作成できませんでした: {exc}") from exc
+        raise HTTPException(
+            status_code=500,
+            detail="ジョブを作成できませんでした。時間をおいて再度お試しください。",
+        ) from None
 
     uploads.discard(upload_id)
     return {"job_id": job.id}

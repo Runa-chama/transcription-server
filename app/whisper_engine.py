@@ -108,6 +108,12 @@ class Engine:
             self._force_cpu = True
             self._unload_locked()
 
+    def allow_gpu(self) -> None:
+        with self._lock:
+            if self._force_cpu:
+                self._force_cpu = False
+                self._unload_locked()
+
     def shutdown(self) -> None:
         self._stop.set()
         self.unload()
@@ -126,10 +132,7 @@ class Engine:
         self._unload_locked()
         device, compute_type = self._choose()
         if progress:
-            if device == "cuda":
-                progress(f"{model_id} モデルを RTX 4060 Ti (CUDA) に読み込み中…")
-            else:
-                progress(f"{model_id} モデルを CPU に読み込み中…")
+            progress(f"{model_id} モデルを準備しています…")
 
         from faster_whisper import WhisperModel
 
@@ -142,10 +145,8 @@ class Engine:
                 cpu_threads=config.CPU_THREADS,
                 num_workers=1,
             )
-        except Exception as exc:
+        except Exception:
             if device == "cuda":
-                if progress:
-                    progress("GPU のメモリが不足しているため CPU に切り替えます…")
                 self._force_cpu = True
                 device, compute_type = "cpu", "int8"
                 self._model = WhisperModel(
@@ -163,8 +164,7 @@ class Engine:
         self._compute_type = compute_type
         self._last_used = time.time()
         if progress:
-            label = "RTX 4060 Ti (CUDA)" if device == "cuda" else "CPU"
-            progress(f"モデルの準備完了（{label} / {compute_type}）")
+            progress("モデルの準備が完了しました")
 
     # -- inference ---------------------------------------------------------
 
