@@ -41,6 +41,14 @@ const segmentBody = $("segmentBody");
 const fullText = $("fullText");
 const downloads = $("downloads");
 
+const densityQuery = window.matchMedia("(min-width: 861px)");
+const updateDensity = () => {
+  document.body.classList.toggle("is-compact", densityQuery.matches);
+  document.body.classList.toggle("is-cozy", !densityQuery.matches);
+};
+updateDensity();
+densityQuery.addEventListener?.("change", updateDensity);
+
 function formatBytes(value) {
   if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(2)} GB`;
   if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`;
@@ -69,7 +77,9 @@ const NOTICE_KINDS = {
 };
 
 function setNotice(text, kind = "information") {
-  notice.className = `ts-notice ts-notice--${NOTICE_KINDS[kind] || "info"}`;
+  const variant = NOTICE_KINDS[kind] || "info";
+  const fdsVariant = variant === "info" ? "information" : variant;
+  notice.className = `ts-notice ts-notice--${variant} fd-message-strip fd-message-strip--${fdsVariant}`;
   noticeText.textContent = text;
 }
 
@@ -105,18 +115,29 @@ function fillSelect(select, items, selected) {
 function buildFormats(formats) {
   formatsBox.innerHTML = "";
   for (const fmt of formats) {
-    const label = document.createElement("label");
-    label.className = "ts-check";
+    const item = document.createElement("div");
+    item.className = "ts-check";
     const input = document.createElement("input");
     input.type = "checkbox";
+    input.className = "fd-checkbox";
     input.id = `fmt-${fmt}`;
     input.value = fmt;
     input.checked = fmt === "srt" || fmt === "txt";
+    const label = document.createElement("label");
+    label.className = "fd-checkbox__label";
+    label.htmlFor = input.id;
+    const checkmark = document.createElement("span");
+    checkmark.className = "fd-checkbox__checkmark";
+    checkmark.setAttribute("aria-hidden", "true");
+    const container = document.createElement("span");
+    container.className = "fd-checkbox__label-container";
     const text = document.createElement("span");
-    text.className = "ts-check__text";
+    text.className = "fd-checkbox__text ts-check__text";
     text.textContent = fmt.toUpperCase();
-    label.append(input, text);
-    formatsBox.appendChild(label);
+    container.appendChild(text);
+    label.append(checkmark, container);
+    item.append(input, label);
+    formatsBox.appendChild(item);
   }
 }
 

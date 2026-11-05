@@ -5,29 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="音声・動画を文字起こしするサービス">
   <title>文字起こし | transcription.runachama.com</title>
+  <link rel="stylesheet" href="/static/vendor/fd_sap_horizon.css">
+  <link rel="stylesheet" href="/static/vendor/sap_horizon.css">
+  <link rel="stylesheet" href="/static/vendor/fundamental-styles.css">
   <link rel="stylesheet" href="/static/custom.css">
 </head>
-<body>
-<header class="ts-header">
+<body class="is-cozy">
+<header class="ts-header fd-bar fd-bar--header">
   <div class="ts-header__inner">
-    <a class="ts-brand" href="/" aria-label="文字起こし ホーム">
+    <a class="ts-brand fd-bar__element" href="/" aria-label="文字起こし ホーム">
       <span class="ts-brand__mark" aria-hidden="true">文</span>
       <span class="ts-brand__text">文字起こし</span>
     </a>
-    <span class="ts-header__note">音声・動画からテキストへ</span>
+    <span class="ts-header__note fd-bar__element">音声・動画からテキストへ</span>
   </div>
 </header>
 
-<main class="ts-main">
+<main class="ts-main fd-page">
   <section class="ts-intro" aria-labelledby="pageTitle">
-    <h1 id="pageTitle">音声を、読めるテキストに。</h1>
+    <h1 id="pageTitle" class="fd-title fd-title--h1">音声を、読めるテキストに。</h1>
     <p>アップロードするだけで、srt / vtt / txt / json 形式に書き出します。</p>
   </section>
 
   <div class="ts-workbench">
-    <section class="ts-panel ts-panel--form" aria-labelledby="formTitle">
+    <section class="ts-panel ts-panel--form fd-layout-panel" aria-labelledby="formTitle">
       <header class="ts-panel__head">
-        <h2 id="formTitle">ファイルと設定</h2>
+        <h2 id="formTitle" class="fd-title fd-title--h3">ファイルと設定</h2>
       </header>
       <div class="ts-panel__body">
         <div id="dropzone" class="ts-dropzone" tabindex="0" role="button" aria-label="音声または動画ファイルを選択">
@@ -46,27 +49,27 @@
           <legend class="ts-legend">設定</legend>
           <div class="ts-fields">
             <div class="ts-field">
-              <label class="ts-label" for="model">モデル</label>
+              <label class="ts-label fd-form-label" for="model">モデル</label>
               <span class="ts-select-wrap">
-                <select id="model" class="ts-select"></select>
+                <select id="model" class="ts-select fd-select"></select>
               </span>
             </div>
             <div class="ts-field">
-              <label class="ts-label" for="language">言語</label>
+              <label class="ts-label fd-form-label" for="language">言語</label>
               <span class="ts-select-wrap">
-                <select id="language" class="ts-select"></select>
+                <select id="language" class="ts-select fd-select"></select>
               </span>
             </div>
             <div class="ts-field">
-              <label class="ts-label" for="task">タスク</label>
+              <label class="ts-label fd-form-label" for="task">タスク</label>
               <span class="ts-select-wrap">
-                <select id="task" class="ts-select"></select>
+                <select id="task" class="ts-select fd-select"></select>
               </span>
             </div>
             <div class="ts-field">
-              <label class="ts-label" for="beam">ビーム幅</label>
+              <label class="ts-label fd-form-label" for="beam">ビーム幅</label>
               <span class="ts-select-wrap">
-                <select id="beam" class="ts-select">
+                <select id="beam" class="ts-select fd-select">
                   <option value="1">1（高速）</option>
                   <option value="3">3</option>
                   <option value="5">5（高精度）</option>
@@ -77,19 +80,19 @@
         </fieldset>
 
         <div class="ts-options">
-          <label class="ts-check">
-            <input id="vad" type="checkbox" checked>
-            <span class="ts-check__text">無音区間をスキップ（VAD）</span>
-          </label>
-          <label class="ts-check">
-            <input id="txtTimestamps" type="checkbox">
-            <span class="ts-check__text">TXT にタイムスタンプを含める</span>
-          </label>
+          <div class="ts-check">
+            <input id="vad" class="fd-checkbox" type="checkbox" checked>
+            <label class="fd-checkbox__label" for="vad"><span class="fd-checkbox__checkmark" aria-hidden="true"></span><span class="fd-checkbox__label-container"><span class="fd-checkbox__text">無音区間をスキップ（VAD）</span></span></label>
+          </div>
+          <div class="ts-check">
+            <input id="txtTimestamps" class="fd-checkbox" type="checkbox">
+            <label class="fd-checkbox__label" for="txtTimestamps"><span class="fd-checkbox__checkmark" aria-hidden="true"></span><span class="fd-checkbox__label-container"><span class="fd-checkbox__text">TXT にタイムスタンプを含める</span></span></label>
+          </div>
         </div>
 
         <div class="ts-field">
-          <label class="ts-label" for="prompt">ヒント（任意）</label>
-          <input id="prompt" class="ts-input" type="text" maxlength="500" placeholder="人名・専門用語など">
+          <label class="ts-label fd-form-label" for="prompt">ヒント（任意）</label>
+          <input id="prompt" class="ts-input fd-input" type="text" maxlength="500" placeholder="人名・専門用語など">
         </div>
 
         <fieldset class="ts-fieldset">
@@ -98,26 +101,26 @@
         </fieldset>
 
         <div class="ts-actions">
-          <button id="startBtn" class="ts-button ts-button--primary" type="button" disabled>文字起こしを開始</button>
-          <button id="cancelBtn" class="ts-button ts-button--ghost" type="button" hidden>キャンセル</button>
+          <button id="startBtn" class="ts-button ts-button--primary fd-button fd-button--emphasized" type="button" disabled>文字起こしを開始</button>
+          <button id="cancelBtn" class="ts-button ts-button--ghost fd-button" type="button" hidden>キャンセル</button>
         </div>
       </div>
     </section>
 
-    <section class="ts-panel ts-panel--status" aria-labelledby="statusTitle">
+    <section class="ts-panel ts-panel--status fd-layout-panel" aria-labelledby="statusTitle">
       <header class="ts-panel__head">
-        <h2 id="statusTitle">ステータス</h2>
+        <h2 id="statusTitle" class="fd-title fd-title--h3">ステータス</h2>
       </header>
       <div class="ts-panel__body">
         <div class="ts-status">
           <span id="busy" class="ts-spinner" hidden aria-hidden="true"></span>
           <div class="ts-status__main">
-            <p id="statusText" class="ts-status__text" aria-live="polite">待機中</p>
+          <p id="statusText" class="ts-status__text fd-title fd-title--h4" aria-live="polite">待機中</p>
             <p id="statusSub" class="ts-muted"></p>
           </div>
         </div>
 
-        <div id="notice" class="ts-notice ts-notice--info" role="status" aria-live="polite">
+        <div id="notice" class="ts-notice ts-notice--info fd-message-strip fd-message-strip--information" role="status" aria-live="polite">
           <p id="noticeText">ファイルを選択してください。</p>
         </div>
 
@@ -145,12 +148,12 @@
 
         <section id="resultWrap" class="ts-result" aria-labelledby="resultTitle" hidden>
           <header class="ts-result__head">
-            <h2 id="resultTitle">文字起こし結果</h2>
+            <h2 id="resultTitle" class="fd-title fd-title--h3">文字起こし結果</h2>
             <div id="downloads" class="ts-downloads"></div>
           </header>
           <div class="ts-result__body">
             <div class="ts-table-wrap">
-              <table class="ts-table">
+              <table class="ts-table fd-table">
                 <thead>
                   <tr>
                     <th scope="col">開始</th>
@@ -165,9 +168,9 @@
             <div class="ts-fulltext">
               <div class="ts-fulltext__head">
                 <label class="ts-label" for="fullText">全文</label>
-                <button id="copyBtn" class="ts-button ts-button--small" type="button">コピー</button>
+                <button id="copyBtn" class="ts-button ts-button--small fd-button" type="button">コピー</button>
               </div>
-              <textarea id="fullText" class="ts-textarea" rows="10" readonly></textarea>
+              <textarea id="fullText" class="ts-textarea fd-textarea" rows="10" readonly></textarea>
             </div>
           </div>
         </section>

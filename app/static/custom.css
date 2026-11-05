@@ -5,33 +5,33 @@
 :root {
   color-scheme: light;
 
-  --paper: #f2efe8;
-  --paper-deep: #e8e4da;
-  --surface: #fffdf9;
-  --surface-sunken: #f8f5ef;
+  --paper: var(--sapBackgroundColor, #f5f6f7);
+  --paper-deep: var(--sapList_BorderColor, #d9d9d9);
+  --surface: var(--sapGroup_ContentBackground, #fff);
+  --surface-sunken: var(--sapBaseColor, #f7f7f7);
 
-  --ink: #1b1a17;
-  --ink-2: #4a473f;
-  --ink-3: #6e695e;
+  --ink: var(--sapTextColor, #1d2d3e);
+  --ink-2: var(--sapContent_LabelColor, #475e75);
+  --ink-3: var(--sapContent_LabelColor, #475e75);
 
-  --line: #ddd8cd;
-  --line-strong: #847c6d;
+  --line: var(--sapGroup_ContentBorderColor, #d9d9d9);
+  --line-strong: var(--sapField_BorderColor, #89919a);
 
-  --accent: #0d5c55;
-  --accent-hover: #0a4a44;
-  --accent-weak: #e0efeb;
-  --accent-contrast: #ffffff;
+  --accent: var(--sapButton_Emphasized_Background, #0070f2);
+  --accent-hover: var(--sapButton_Emphasized_Hover_Background, #0057d2);
+  --accent-weak: var(--sapInformativeElement_Background, #e1f4ff);
+  --accent-contrast: var(--sapButton_Emphasized_TextColor, #fff);
 
-  --danger: #9c2b24;
-  --danger-weak: #f8e7e4;
-  --success: #2d6639;
-  --success-weak: #e7f1e6;
-  --warning: #7f5410;
-  --warning-weak: #f7edd8;
-  --info: #2b556e;
-  --info-weak: #e7eff4;
+  --danger: var(--sapNegativeColor, #aa0808);
+  --danger-weak: var(--sapErrorBackground, #ffebeb);
+  --success: var(--sapPositiveColor, #256f3a);
+  --success-weak: var(--sapSuccessBackground, #f5fae5);
+  --warning: var(--sapCriticalColor, #e76500);
+  --warning-weak: var(--sapWarningBackground, #fff8d6);
+  --info: var(--sapInformativeColor, #0070f2);
+  --info-weak: var(--sapInformativeBackground, #e1f4ff);
 
-  --focus: #0d5c55;
+  --focus: var(--sapContent_FocusColor, #0057d2);
 
   --radius-sm: 6px;
   --radius: 10px;
@@ -39,7 +39,7 @@
 
   --shadow-focus: 0 0 0 3px var(--accent-weak);
 
-  --font-sans: "Segoe UI", "Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  --font-sans: "72", "Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
   --font-mono: "Cascadia Mono", "Consolas", "SF Mono", ui-monospace, monospace;
 
   --step--1: 0.8125rem;
@@ -413,31 +413,12 @@ body {
 }
 
 .ts-check {
-  min-height: 2.75rem;
-  display: inline-flex;
+  position: relative;
+  min-height: 2rem;
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.25rem 0;
   font-size: var(--step--1);
   color: var(--ink);
-  cursor: pointer;
-}
-
-.ts-check input {
-  flex: 0 0 auto;
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
-  accent-color: var(--accent);
-}
-
-.ts-check input:active {
-  transform: scale(0.94);
-}
-
-.ts-check input:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
 }
 
 .ts-check__text {
@@ -448,6 +429,15 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem 1.25rem;
+}
+
+.ts-check .fd-checkbox__label {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.ts-check .fd-checkbox__text {
+  font-size: var(--step--1);
 }
 
 /* Actions */
