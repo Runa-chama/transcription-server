@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ローカル GPU で動作する文字起こしサービス">
+  <title>文字起こし | transcription.runachama.com</title>
+  <link rel="stylesheet" href="/static/vendor/sap_horizon.css">
+  <link rel="stylesheet" href="/static/vendor/fundamental-styles.css">
+  <link rel="stylesheet" href="/static/custom.css">
+</head>
+<body>
+<div class="fd-page fd-page--solid">
+  <header class="fd-bar fd-bar--page fd-bar--header ts-header">
+    <div class="fd-bar__left">
+      <div class="fd-bar__element">
+        <span class="ts-logo" aria-hidden="true">T</span>
+      </div>
+      <div class="fd-bar__element ts-brand">
+        <h1 class="fd-title fd-title--h4">Transcription</h1>
+        <span class="ts-muted">文字起こし</span>
+      </div>
+    </div>
+    <div class="fd-bar__right">
+      <div class="fd-bar__element">
+        <span id="gpuChip" class="fd-info-label fd-info-label--accent-color-6">
+          <span class="fd-info-label__text">GPU 確認中</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="fd-page__content fd-page__content--m_l ts-content">
+    <div class="ts-hero">
+      <p class="ts-hero__lead">音声・動画をアップロードするだけで、SRT / VTT / TXT / JSON に書き出します。</p>
+      <p class="ts-muted">処理はこの PC の RTX 4060 Ti で自動実行されます。プロセッサ選択はありません。</p>
+    </div>
+
+    <div class="ts-grid">
+      <section class="fd-layout-panel">
+        <header class="fd-layout-panel__header">
+          <div class="fd-layout-panel__head">
+            <h2 class="fd-title fd-title--h5 fd-layout-panel__title">ファイルと設定</h2>
+          </div>
+        </header>
+        <div class="fd-layout-panel__body">
+          <div id="dropzone" class="ts-dropzone" tabindex="0" role="button" aria-label="ファイルを選択">
+            <input id="fileInput" type="file" accept=".wav,.mp3,.m4a,.aac,.flac,.ogg,.oga,.opus,.wma,.aiff,.aif,.amr,.mp4,.mkv,.mov,.webm,.avi,.m4v,.mpeg,.mpg,.3gp,.ts,audio/*,video/*" hidden>
+            <p class="ts-dropzone__title">ここにファイルをドロップ</p>
+            <p class="ts-muted">またはクリックして選択（最大 4 GB）</p>
+            <p id="fileInfo" class="ts-fileinfo">ファイルが選択されていません</p>
+          </div>
+
+          <div class="ts-form-grid">
+            <div class="fd-form-item">
+              <label class="fd-form-label" for="model">モデル</label>
+              <select id="model" class="fd-input ts-select"></select>
+            </div>
+            <div class="fd-form-item">
+              <label class="fd-form-label" for="language">言語</label>
+              <select id="language" class="fd-input ts-select"></select>
+            </div>
+            <div class="fd-form-item">
+              <label class="fd-form-label" for="task">タスク</label>
+              <select id="task" class="fd-input ts-select"></select>
+            </div>
+            <div class="fd-form-item">
+              <label class="fd-form-label" for="beam">ビーム幅</label>
+              <select id="beam" class="fd-input ts-select">
+                <option value="1">1（高速）</option>
+                <option value="3">3</option>
+                <option value="5">5（高精度）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ts-options">
+            <div class="fd-checkbox__label-container">
+              <input id="vad" class="fd-checkbox" type="checkbox" checked>
+              <label class="fd-checkbox__label" for="vad">無音区間をスキップ（VAD）</label>
+            </div>
+            <div class="fd-checkbox__label-container">
+              <input id="txtTimestamps" class="fd-checkbox" type="checkbox">
+              <label class="fd-checkbox__label" for="txtTimestamps">TXT にタイムスタンプを含める</label>
+            </div>
+          </div>
+
+          <div class="fd-form-item">
+            <label class="fd-form-label" for="prompt">ヒント（任意）</label>
+            <input id="prompt" class="fd-input" type="text" maxlength="500" placeholder="人名・専門用語など">
+          </div>
+
+          <fieldset class="ts-fieldset">
+            <legend class="fd-form-label">出力形式</legend>
+            <div id="formats" class="ts-formats"></div>
+          </fieldset>
+
+          <div class="ts-actions">
+            <button id="startBtn" class="fd-button fd-button--emphasized" type="button" disabled>文字起こしを開始</button>
+            <button id="cancelBtn" class="fd-button fd-button--transparent" type="button" hidden>キャンセル</button>
+          </div>
+
+          <div id="uploadWrap" class="ts-progress" hidden>
+            <div class="ts-progress__head">
+              <span id="uploadLabel">アップロード中…</span>
+              <span id="uploadPct">0%</span>
+            </div>
+            <div class="fd-progress-indicator" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="fd-progress-indicator__container">
+                <div id="uploadBar" class="fd-progress-indicator__progress-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="jobWrap" class="ts-progress" hidden>
+            <div class="ts-progress__head">
+              <span id="jobLabel">処理待ち…</span>
+              <span id="jobPct">0%</span>
+            </div>
+            <div class="fd-progress-indicator" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="fd-progress-indicator__container">
+                <div id="jobBar" class="fd-progress-indicator__progress-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fd-layout-panel">
+        <header class="fd-layout-panel__header">
+          <div class="fd-layout-panel__head">
+            <h2 class="fd-title fd-title--h5 fd-layout-panel__title">ステータスと結果</h2>
+          </div>
+        </header>
+        <div class="fd-layout-panel__body">
+          <div id="notice" class="fd-message-strip fd-message-strip--information" role="note">
+            <p id="noticeText" class="fd-message-strip__text">ファイルを選択してください。アップロードは分割・並列で行われます。</p>
+          </div>
+
+          <div id="statusBox" class="ts-status">
+            <div id="busy" class="fd-busy-indicator" aria-label="処理中" role="progressbar" hidden>
+              <div class="fd-busy-indicator__circle"></div>
+              <div class="fd-busy-indicator__circle"></div>
+              <div class="fd-busy-indicator__circle"></div>
+            </div>
+            <div>
+              <p id="statusText" class="ts-status__text">待機中</p>
+              <p id="statusSub" class="ts-muted"></p>
+            </div>
+          </div>
+
+          <dl id="metaList" class="ts-meta" hidden></dl>
+
+          <div id="resultWrap" hidden>
+            <div class="ts-result-head">
+              <h3 class="fd-title fd-title--h5">文字起こし結果</h3>
+              <div id="downloads" class="ts-downloads"></div>
+            </div>
+            <div class="ts-table-wrap">
+              <table class="fd-table fd-table--compact">
+                <thead class="fd-table__header">
+                  <tr class="fd-table__row">
+                    <th class="fd-table__cell fd-table__cell--header">開始</th>
+                    <th class="fd-table__cell fd-table__cell--header">終了</th>
+                    <th class="fd-table__cell fd-table__cell--header">テキスト</th>
+                  </tr>
+                </thead>
+                <tbody id="segmentBody" class="fd-table__body"></tbody>
+              </table>
+            </div>
+            <div class="ts-fulltext">
+              <div class="ts-result-head">
+                <label class="fd-form-label" for="fullText">全文</label>
+                <button id="copyBtn" class="fd-button fd-button--compact" type="button">コピー</button>
+              </div>
+              <textarea id="fullText" class="fd-textarea" rows="10" readonly></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="ts-footer">
+      <span>アップロードされたファイルと生成結果は 12 時間後に自動削除されます。</span>
+      <span>GPU はローカル LLM サーバーと共有し、文字起こしは 1 件ずつ実行されます。</span>
+    </footer>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
